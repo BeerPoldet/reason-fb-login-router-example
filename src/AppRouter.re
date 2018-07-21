@@ -1,18 +1,18 @@
 module AppRouteConfig = {
   type route =
-    | Home
+    | Main
     | Login;
 
   let toUrl = route =>
     switch (route) {
-    | Home => "/"
+    | Main => "/"
     | Login => "/login"
     };
 
   let toRoute = (url: ReasonReact.Router.url) =>
     switch (url.path) {
     | ["login"] => Login
-    | _ => Home
+    | _ => Main
     };
 };
 
@@ -23,13 +23,31 @@ let component = ReasonReact.statelessComponent("AppRouter");
 let make = _children => {
   ...component,
   render: _self =>
-    <Router>
+    <WithAuth>
       ...(
-           ({route}) =>
-             switch (route) {
-             | Login => <LoginPage />
-             | _ => ReasonReact.null
+           result =>
+             switch (result) {
+             | Loading => <h1> (ReasonReact.string("Loading")) </h1>
+             | _ =>
+               <Router
+                 watchRoute=(
+                   (route, updateRoute) =>
+                     switch (result, route) {
+                     | (Authorized, Login) => updateRoute(Main)
+                     | (Unauthorize, Main) => updateRoute(Login)
+                     | _ => ignore()
+                     }
+                 )>
+                 ...(
+                      ({route}) =>
+                        switch (route) {
+                        | Login => <LoginPage />
+                        | Main => <MainPage />
+                        | _ => ReasonReact.null
+                        }
+                    )
+               </Router>
              }
          )
-    </Router>,
+    </WithAuth>,
 };
